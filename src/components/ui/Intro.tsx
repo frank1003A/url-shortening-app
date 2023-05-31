@@ -1,16 +1,12 @@
-import ScrollAnimation from "react-animate-on-scroll";
 import illustration from "../../images/illustration-working.svg";
+import ScrollAnimation from "../Scroll/Animation/ScrollAnimation";
 import Section from "../Section";
 import Button from "../buttons/Button";
 
 const Intro = () => {
   return (
     <Section className="hero-intro">
-      <ScrollAnimation
-        className="write-up"
-        animateOnce
-        animateIn="animate__zoomIn"
-      >
+      <ScrollAnimation className="write-up" animateClass="animate__zoomIn">
         <h1>More than just shorter links</h1>
         <h2>
           Build your brand’s recognition and get detailed insights on how your

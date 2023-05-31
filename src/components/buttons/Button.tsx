@@ -17,7 +17,7 @@ const Button = ({ children, icon, type, className, onClick }: ButtonProps) => {
     }
   };
   return (
-    <button className={assignClassName()} onClick={onClick}>
+    <button className={assignClassName()} color="white" onClick={onClick}>
       {icon}
       {children}
     </button>
