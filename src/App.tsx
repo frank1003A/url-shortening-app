@@ -28,6 +28,10 @@ function App() {
   const [classN, setClassN] = useState<string>();
   const [atBtm, setAtBtm] = useState(false);
   const [inputError, setInputError] = useState<string>();
+  const [linkClassNames, setLinkClassNames] = useState(
+    Array(genLinks.length).fill("")
+  );
+  const [valid, setValid] = useState(true);
 
   const handleScroll = () => {
     if (window.scrollY > window.outerHeight) {
@@ -47,25 +51,31 @@ function App() {
   }, []);
 
   const shortenLink = async () => {
-    // Clear any pre-existing links
-    if (genLinks.length > 0 && isValid(link) === false) handleClearState();
-    // Load sequence
-    setLoading(true);
-    try {
-      await fetch(`https://api.shrtco.de/v2/shorten?url=${link}`).then(
-        async (res) => {
-          let sl = await res.json().then((res) => res);
-          let links = [
-            sl.result.short_link,
-            sl.result.short_link2,
-            sl.result.short_link3,
-          ];
-          setGenLinks(links);
-          setLoading(false);
-        }
-      );
-    } catch (error) {
-      console.log(error);
+    if (isValid(link)) {
+      // Clear any pre-existing links
+      if (genLinks.length > 0 && isValid(link) === false) handleClearState();
+      // Load sequence
+      setLoading(true);
+      try {
+        await fetch(`https://api.shrtco.de/v2/shorten?url=${link}`).then(
+          async (res) => {
+            let sl = await res.json().then((res) => res);
+            let links = [
+              sl.result.short_link,
+              sl.result.short_link2,
+              sl.result.short_link3,
+            ];
+            setGenLinks(links);
+            setLoading(false);
+          }
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      setInputError("Please add a link");
+      setValid(false);
+      return;
     }
   };
 
@@ -80,13 +90,25 @@ function App() {
   const handleInputChange = (value: string) => {
     if (isValid(value) === false) {
       setInputError("Please add a link");
+      setValid(false);
     } else {
       setlink(value);
+      setInputError("");
+      setValid(true);
     }
   };
 
-  const handleStyleChange = (id: number, text: string) => {
+  const handleStyleChange = (index: number, className: string) => {
+    const updatedClassNames = [...linkClassNames];
+    updatedClassNames[index] = className;
+    setLinkClassNames(updatedClassNames);
+  };
+
+  /**const handleStyleChange = (id: number, text: string) => {
     let style = "";
+    let ln = [...genLinks]
+
+    ln[id] = ""
     genLinks?.filter((li, idx) => {
       if (idx === id) {
         setClassN("copied");
@@ -95,7 +117,7 @@ function App() {
       }
       return li;
     });
-  };
+  }; */
 
   return (
     <main>
@@ -108,7 +130,7 @@ function App() {
               placeholder="Shorten a link here..."
               autoFocus
               onChange={(e) => handleInputChange(e.target.value)}
-              //className={isValid(link) ? "" : "error"}
+              className={valid === false ? "error" : ""}
             />
             <p className="err-tag">{inputError}</p>
           </div>
@@ -124,8 +146,8 @@ function App() {
                 key={idx}
                 link={link}
                 generatedLink={ln}
-                onCopy={(t, b) => handleStyleChange(idx, t)}
-                className={classN}
+                onCopy={(t, b) => handleStyleChange(idx, "copied")}
+                className={linkClassNames[idx]}
               />
             );
           })}
