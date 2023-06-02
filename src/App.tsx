@@ -1,6 +1,9 @@
-import "animate.css/animate.min.css";
+// React Import
 import { useEffect, useState } from "react";
+// Styles
+import "animate.css/animate.min.css";
 import "./App.scss";
+// Components
 import Section from "./components/Section";
 import Button from "./components/buttons/Button";
 import Card from "./components/card/Card";
@@ -10,29 +13,33 @@ import BookLinks from "./components/ui/BookLinks";
 import Footer from "./components/ui/Footer";
 import Header from "./components/ui/Header";
 import Intro from "./components/ui/Intro";
-// Advanced Stats Icons
+
+// Loader
 import Loader from "./components/Loader";
+// Icons
 import Iconbutton from "./components/buttons/Iconbutton";
+import arrowUp from "./images/arrow_up_icon.svg";
 import BR from "./images/icon-brand-recognition.svg";
 import DR from "./images/icon-detailed-records.svg";
 import FC from "./images/icon-fully-customizable.svg";
-//
-import arrowUp from "./images/arrow_up_icon.svg";
+// hooks
+import useLocalStorage from "./hooks/useLocalStorage";
 
 function App() {
+  // STATES
   const [link, setlink] = useState<string>("");
-  const [genLinks, setGenLinks] = useState<string[]>([]);
+  const [links, setLinks] = useLocalStorage<
+    { link: string; short_link: string }[]
+  >("links", []);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>();
-  const [copied, setCopied] = useState<string>();
-  const [classN, setClassN] = useState<string>();
   const [atBtm, setAtBtm] = useState(false);
   const [inputError, setInputError] = useState<string>();
   const [linkClassNames, setLinkClassNames] = useState(
-    Array(genLinks.length).fill("")
+    Array(links.length).fill("")
   );
   const [valid, setValid] = useState(true);
 
+  // FUNCTIONS
   const handleScroll = () => {
     if (window.scrollY > window.outerHeight) {
       setAtBtm(true);
@@ -41,42 +48,40 @@ function App() {
     }
   };
 
-  const handleClearState = () => {
-    setGenLinks([]);
+  const fetchLinks = async () => {
+    // Load sequence
+    setLoading(true);
+    try {
+      await fetch(`https://api.shrtco.de/v2/shorten?url=${link}`).then(
+        async (res) => {
+          let sl = await res.json().then((res) => res);
+          let curLink = { link: link, short_link: sl.result.short_link };
+          setLinks([...links, curLink]);
+          setLoading(false);
+        }
+      );
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const shortenLink = async () => {
+    //
     if (isValid(link)) {
-      // Clear any pre-existing links
-      if (genLinks.length > 0 && isValid(link) === false) handleClearState();
-      // Load sequence
-      setLoading(true);
-      try {
-        await fetch(`https://api.shrtco.de/v2/shorten?url=${link}`).then(
-          async (res) => {
-            let sl = await res.json().then((res) => res);
-            let links = [
-              sl.result.short_link,
-              sl.result.short_link2,
-              sl.result.short_link3,
-            ];
-            setGenLinks(links);
-            setLoading(false);
-          }
-        );
-      } catch (error) {
-        console.log(error);
-      }
+      setInputError("");
     } else {
       setInputError("Please add a link");
-      setValid(false);
+    }
+
+    if (links.length === 3) setValid(true);
+
+    //
+    if (links.length >= 3 && valid) {
+      setInputError("max number of links reached");
       return;
     }
+
+    if (links.length < 3) await fetchLinks();
   };
 
   const isValid = (value: string) => {
@@ -104,20 +109,11 @@ function App() {
     setLinkClassNames(updatedClassNames);
   };
 
-  /**const handleStyleChange = (id: number, text: string) => {
-    let style = "";
-    let ln = [...genLinks]
-
-    ln[id] = ""
-    genLinks?.filter((li, idx) => {
-      if (idx === id) {
-        setClassN("copied");
-      } else {
-        setClassN("");
-      }
-      return li;
-    });
-  }; */
+  // EFFECT HOOKS
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <main>
@@ -140,17 +136,28 @@ function App() {
         </div>
         <div className="shortened-links">
           {loading && <Loader />}
-          {genLinks?.map((ln, idx) => {
+          {links?.map((ln, idx) => {
             return (
               <Link
                 key={idx}
-                link={link}
-                generatedLink={ln}
+                link={ln.link}
+                generatedLink={ln.short_link}
                 onCopy={(t, b) => handleStyleChange(idx, "copied")}
                 className={linkClassNames[idx]}
               />
             );
           })}
+          {links.length === 3 && (
+            <Button
+              type="square"
+              onClick={() => {
+                localStorage.removeItem("links");
+                setLinks([]);
+              }}
+            >
+              Clear
+            </Button>
+          )}
         </div>
         <div className="header">
           <h2>Advanced Statistics</h2>
